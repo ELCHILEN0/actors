@@ -7,7 +7,7 @@ pub trait Sender<M>
 where
     M: Message + Send + Sync + 'static,
 {
-    fn send(&mut self, msg: M);
+    fn send(&self, msg: M);
     fn boxed(&self) -> Box<Sender<M>>;
 }
 
@@ -124,7 +124,7 @@ where
     M: Message + Send + Sync + 'static,
     A: Actor + Handler<M>,
 {
-    fn send(&mut self, msg: M)
+    fn send(&self, msg: M)
     {
         let guard = self.handle.notify();
         self.tx.send(Self::pack(msg));   
@@ -140,7 +140,7 @@ impl<M> Sender<M> for EmptyAddr<M>
 where
     M: Message + Send + Sync + 'static,
 {
-    fn send(&mut self, msg: M)
+    fn send(&self, msg: M)
     { }
 
     fn boxed(&self) -> Box<Sender<M>>
@@ -153,7 +153,7 @@ impl<M> Sender<M> for Recipient<M>
 where
     M: Message + Send + Sync + 'static,
 {
-    fn send(&mut self, msg: M)
+    fn send(&self, msg: M)
     {
         self.sender.send(msg);
     }

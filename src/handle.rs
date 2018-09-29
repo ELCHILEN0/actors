@@ -11,19 +11,18 @@ impl TaskWakeHandle {
 }
 
 pub trait WakeHandle: Sized {
-    fn update(&mut self);
-    fn notify(&mut self) -> TaskWakeGuard;
+    fn update(&self);
+    fn notify(&self) -> TaskWakeGuard;
 }
 
-
 impl WakeHandle for TaskWakeHandle {
-    fn update(&mut self)
+    fn update(&self)
     {
         let mut handle = self.0.lock().unwrap();
         *handle = Some(task::current());
     }
 
-    fn notify(&mut self) -> TaskWakeGuard
+    fn notify(&self) -> TaskWakeGuard
     {
         TaskWakeGuard(self.0.lock().unwrap().take())
     }

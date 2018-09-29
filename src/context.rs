@@ -45,6 +45,7 @@ where
     handle: TaskWakeHandle,
     incoming_tx: mpsc::Sender<PackedMessage<A>>,
     incoming_rx: mpsc::Receiver<PackedMessage<A>>,
+    futures: Vec<Box<Future<Item=(), Error=()> + 'static + Send>>,
     marker: std::marker::PhantomData<A>,
 
     // TODO: child actors, supervisor strat
@@ -62,6 +63,7 @@ where
             handle: TaskWakeHandle::empty(),
             incoming_tx: tx,
             incoming_rx: rx,
+            futures: Vec::new(),
             marker: std::marker::PhantomData,
         }
     }
@@ -85,6 +87,13 @@ where
     pub fn state(&self) -> ContextState
     {
         self.state.clone()
+    }
+
+    pub fn spawn<F>(&mut self, future: F)
+    where
+        F: Future<Item=(), Error=()> + Send + 'static,
+    {
+        self.futures.push(Box::new(future));
     }
 
 }
@@ -125,6 +134,19 @@ where
             }
             _ => {
                 loop {
+                    loop {
+                        // technically could pass the actor in here but that might be bad form since the actors should only process messages
+                        // thus let the future send a message to self().
+                        self.ctx.futures = self.ctx.futures.drain_filter(|future| {
+                            match future.poll() {
+                                Ok(Async::Ready(_)) => false,
+                                Ok(Async::NotReady) => true,
+                                Err(_) => false,
+                            }
+                        }).collect();
+                        break;
+                    }
+
                     // TODO: add preemption
                     match self.ctx.incoming_rx.try_recv() {
                         Ok(mut packed_message) => {

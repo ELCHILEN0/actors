@@ -1,4 +1,5 @@
 #![feature(futures_api)]
+#![feature(drain_filter)]
 
 use tokio::prelude::*;
 use tokio::prelude::task::Task;
@@ -9,11 +10,13 @@ mod address;
 mod context;
 mod messages;
 mod handle;
+mod remote;
 
 pub use crate::address::*;
 pub use crate::context::*;
 pub use crate::messages::*;
 pub use crate::handle::*;
+pub use crate::remote::*;
 
 pub trait Actor: Sized + Send + Sync + 'static {
     fn spawn(self) -> Addr<Self>
