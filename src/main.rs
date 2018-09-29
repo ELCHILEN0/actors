@@ -18,7 +18,7 @@ impl Actor for TestActor {
     fn on_spawn(&mut self, ctx: &mut Context<Self>)
     {
 
-        let my_addr = ctx.addr().clone();
+        let my_addr = ctx.addr();
         ctx.spawn(future::lazy(move || {
             my_addr.send(from(my_addr.recipient(), ValidMessageA));
             Ok(())
