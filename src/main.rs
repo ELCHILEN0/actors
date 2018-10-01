@@ -19,14 +19,11 @@ impl Actor for TestActor {
     {
 
         let my_addr = ctx.addr();
+        // my_addr.send(from(my_addr.recipient(), ValidMessageA));
         ctx.spawn(future::lazy(move || {
             my_addr.send(from(my_addr.recipient(), ValidMessageA));
             Ok(())
         }));
-
-        // println!("test act spawn");
-        // let my_addr = ctx.addr();
-        // my_addr.send(from(my_addr.recipient(), ValidMessageA));
     }
 }
 
