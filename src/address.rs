@@ -5,7 +5,7 @@ pub mod message;
 
 pub trait Sender<M>
 where
-    M: Message + Send + Sync + 'static,
+    M: Message,
 {
     fn send(&self, msg: M);
     fn boxed(&self) -> Box<Sender<M>>;
@@ -54,13 +54,10 @@ unsafe impl<M> Send for Recipient<M>
 where
     M: Message { }
 
-unsafe impl<M> Sync for Recipient<M>
-where
-    M: Message { }
 
 impl<M> Clone for Recipient<M>
 where
-    M: Message + Send + Sync + 'static,
+    M: Message,
 {
     fn clone(&self) -> Self {
         Recipient {
@@ -83,7 +80,7 @@ where
 
     pub fn recipient<M>(&self) -> Recipient<M>
     where
-        M: Message + Send + Sync + 'static,
+        M: Message + Send + 'static,
         A: Handler<M>,
     {
         Recipient::from(self)
@@ -92,7 +89,7 @@ where
 
 impl<M> EmptyAddr<M>
 where
-    M: Message + Send + Sync + 'static,
+    M: Message + Send + 'static,
 {
     pub fn new() -> Self {
         EmptyAddr {
@@ -109,7 +106,7 @@ where
 
 impl<M> Recipient<M>
 where
-    M: Message + Send + Sync + 'static,
+    M: Message + Send + 'static,
 {
     pub fn from(sender: &Sender<M>) -> Self
     {
@@ -121,7 +118,7 @@ where
 
 impl<A, M> Sender<M> for Addr<A>
 where
-    M: Message + Send + Sync + 'static,
+    M: Message + Send + 'static,
     A: Actor + Handler<M>,
 {
     fn send(&self, msg: M)
@@ -138,7 +135,7 @@ where
 
 impl<M> Sender<M> for EmptyAddr<M>
 where
-    M: Message + Send + Sync + 'static,
+    M: Message + Send + 'static,
 {
     fn send(&self, msg: M)
     { }
@@ -151,7 +148,7 @@ where
 
 impl<M> Sender<M> for Recipient<M>
 where
-    M: Message + Send + Sync + 'static,
+    M: Message + Send + 'static,
 {
     fn send(&self, msg: M)
     {
@@ -162,4 +159,4 @@ where
     {
         self.sender.boxed()
     }
-}    
+}  

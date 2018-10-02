@@ -27,7 +27,7 @@ pub trait ToPackedMessage<A, M>
 
 impl<A, M> ToPackedMessage<A, M> for Addr<A>
 where
-    M: Message + Send + Sync + 'static,
+    M: Message + Send + 'static,
     A: Actor + Handler<M>
 {
     fn pack(msg: M) -> PackedMessage<A>
@@ -43,7 +43,7 @@ where
 
 impl<A, M> MessageProxy for PackedMessageProxy<A, M>
 where
-    M: Message + Send + Sync + 'static,
+    M: Message + Send + 'static,
     A: Actor + Handler<M>,
 {
     type Actor = A;

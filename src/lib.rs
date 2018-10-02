@@ -18,7 +18,7 @@ pub use crate::messages::*;
 pub use crate::handle::*;
 pub use crate::remote::*;
 
-pub trait Actor: Sized + Send + Sync + 'static {
+pub trait Actor: Sized + Send + 'static {
     fn spawn(self) -> Addr<Self>
     {
         let context = OuterContext::new(self, Context::new());
@@ -36,7 +36,7 @@ pub trait Actor: Sized + Send + Sync + 'static {
 }
 
 pub trait Message {
-    type Response: Message + Send + Sync;
+    type Response: Message + Send;
 }
 
 pub trait Handler<M>

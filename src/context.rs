@@ -7,6 +7,8 @@ where
 {
     act: A,
     ctx: Context<A>,
+
+    scheduled: Vec<Box<Future<Item=(), Error=()> + 'static + Send>>,
 }
 
 impl<A> OuterContext<A>
@@ -18,6 +20,7 @@ where
         OuterContext {
             act,
             ctx,
+            scheduled: Vec::new(),
         }
     }
 
@@ -27,7 +30,7 @@ where
     } 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ContextState
 {
     Starting,
@@ -45,7 +48,7 @@ where
     handle: TaskWakeHandle,
     incoming_tx: mpsc::Sender<PackedMessage<A>>,
     incoming_rx: mpsc::Receiver<PackedMessage<A>>,
-    futures: Vec<Box<Future<Item=(), Error=()> + 'static + Send>>,
+    queued: Vec<Box<Future<Item=(), Error=()> + 'static + Send>>,
     marker: std::marker::PhantomData<A>,
 
     // TODO: child actors, supervisor strat
@@ -63,7 +66,7 @@ where
             handle: TaskWakeHandle::empty(),
             incoming_tx: tx,
             incoming_rx: rx,
-            futures: Vec::new(),
+            queued: Vec::new(),
             marker: std::marker::PhantomData,
         }
     }
@@ -93,10 +96,12 @@ where
     where
         F: Future<Item=(), Error=()> + Send + 'static,
     {
-        self.futures.push(Box::new(future));
+        self.queued.push(Box::new(future));
     }
 
 }
+
+const MESSAGE_QUANTUM: usize = 2;
 
 impl<A> Future for OuterContext<A>
 where 
@@ -135,9 +140,13 @@ where
             _ => {
                 loop {
                     loop {
-                        // technically could pass the actor in here but that might be bad form since the actors should only process messages
-                        // thus let the future send a message to self().
-                        self.ctx.futures = self.ctx.futures.drain_filter(|future| {
+                        // enable logical separation of the context from the futures
+                        self.scheduled.reserve_exact(self.ctx.queued.len());
+                        self.scheduled.append(&mut self.ctx.queued);
+
+                        let act = &mut self.act;
+                        let ctx = &mut self.ctx;
+                        self.scheduled = self.scheduled.drain_filter(|future| {
                             match future.poll() {
                                 Ok(Async::Ready(_)) => false,
                                 Ok(Async::NotReady) => true,
@@ -147,10 +156,17 @@ where
                         break;
                     }
 
-                    // TODO: add preemption
+                    // allow a fixed number of messages before yielding to other actors
+                    let mut remaining_messages = MESSAGE_QUANTUM;
                     match self.ctx.incoming_rx.try_recv() {
                         Ok(mut packed_message) => {
                             packed_message.handle(&mut self.act, &mut self.ctx);
+
+                            remaining_messages -= 1;
+                            if remaining_messages == 0 {
+                                let guard = self.ctx.handle.notify();
+                                break;
+                            }
                         },
                         _ => break,
                     }
