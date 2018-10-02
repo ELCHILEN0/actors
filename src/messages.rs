@@ -1,5 +1,9 @@
 use crate::*;
 
+use serde::Serialize;
+use serde::Deserialize;
+use serde::de::DeserializeOwned;
+
 // useful messages to simplify some derivations.
 
 impl Message for () {
@@ -14,6 +18,7 @@ where
     { }    
 }
 
+#[derive(Serialize)]
 pub struct SenderMessage<M>
 where
     M: Message,

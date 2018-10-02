@@ -54,7 +54,7 @@ fn main() {
         let addr1 = TestActor{ }.spawn();
         let addr2 = TestActor{ }.spawn();
 
-        let addr1listener = ListenerActor::<ValidMessageB>::new(
+        let addr1listener = ListenerActor::<SenderMessage<ValidMessageA>>::new(
             "127.0.0.1:8080".to_string(),
             addr1.recipient(),
         ).spawn();
@@ -76,6 +76,7 @@ fn main() {
         send2.send(remote(ValidMessageB(1)));
         send2.send(remote(ValidMessageB(1)));
         send2.send(remote(ValidMessageB(1)));
+        
 
 
         // let addr1proxyB = RemoteMessageActor::<ValidMessageB>::new(
